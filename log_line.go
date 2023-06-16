@@ -8,6 +8,7 @@ import (
 	"math"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,7 +19,7 @@ var (
 
 type Trace struct {
 	filename   []byte
-	line       int
+	line       string
 	stack_info []byte
 }
 
@@ -69,10 +70,10 @@ func (self *logLine) Handle(depth int) {
 }
 
 func (self *logLine) handleHeadLine(depth int) {
-	_, file, line, ok := runtime.Caller(5 + depth)
+	_, file, line, ok := runtime.Caller(4 + depth)
 	if !ok {
 		self.trace.filename = []byte("???")
-		self.trace.line = -1
+		self.trace.line = ""
 		return
 	}
 	slash := strings.LastIndex(file, "/")
@@ -80,7 +81,7 @@ func (self *logLine) handleHeadLine(depth int) {
 		self.trace.filename = stringbyte.StringToBytes(file[slash+1:])
 	}
 
-	self.trace.line = line
+	self.trace.line = strconv.Itoa(line)
 	self.lenght += len(self.trace.filename)
 	self.lenght += 8
 }
@@ -119,11 +120,9 @@ func (self *logLine) ReadTo(o io.Writer) (int, error) {
 	}
 	if self.level >= LEVEL_WARNNING {
 		ww = append(ww, self.trace.filename, SEP)
-		self.lenght += 1
-		lb, err := IntToBytes(self.trace.line)
-		if err != nil {
-			ww = append(ww, lb, SEP)
-		}
+		lb := stringbyte.StringToBytes(self.trace.line)
+		ww = append(ww, lb, SEP)
+		self.lenght += 2
 	}
 	if self.level >= TRACE_INFO {
 		self.handleStack()

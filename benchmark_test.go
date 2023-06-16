@@ -11,5 +11,6 @@ func Benchmark_test(B *testing.B) {
 	log := New(context.Background(), nil)
 	for i := 0; i < B.N; i++ {
 		log.Info("bench testing data for every day")
+		log.Infof("bench testing data for every day! %s", "OK-opsdfds")
 	}
 }
