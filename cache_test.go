@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
 func TestCache(t *testing.T) {
-	cache := NewCache(5, 8292)
+	cache := NewCache(10, 8192)
 	wg := sync.WaitGroup{}
 	wg_reader := sync.WaitGroup{}
-	n, nn, ns := 0, 0, 0
+	n, nn, ns := uint64(0), 0, uint64(0)
 
 	readfn := func(ctx context.Context, ww *sync.WaitGroup) {
 		dst := make([]byte, 1024)
@@ -30,7 +31,7 @@ func TestCache(t *testing.T) {
 		}
 	}
 	//muw := sync.Mutex{}
-	logs := "hello,world! where are you. I am chinese"
+	logs := "hello,world! where are you. I am chinese!"
 	logs += logs
 	logs += logs
 	logs += logs
@@ -42,12 +43,12 @@ func TestCache(t *testing.T) {
 	//logs += logs
 	for i := 0; i < 2000; i++ {
 		wg.Add(1)
-		ns += len(logs)
+		atomic.AddUint64(&ns, 4*uint64(len(logs)))
 		go func() {
-			//muw.Lock()
-			n1, _ := cache.Write([]byte(logs))
-			//muw.Unlock()
-			n += n1
+			for i := 0; i < 4; i++ {
+				n1, _ := cache.Write([]byte(logs))
+				atomic.AddUint64(&n, uint64(n1))
+			}
 			//fmt.Print("W:", n1)
 			wg.Done()
 		}()

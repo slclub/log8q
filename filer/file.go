@@ -41,11 +41,11 @@ type fileInfo struct {
  * 文件滚动规则
  */
 type rotateRule struct {
-	create     time.Time
-	size       int64  // 按多大开始分隔日志文件
-	method     string // time: 按时间，按日； size 按文件大小
-	keep_days  int64  // 文件保留时长，天数
-	file_index int64  // 当日文件id
+	create        time.Time
+	size          int64  // 按多大开始分隔日志文件
+	method        string // time: 按时间，按日； size 按文件大小
+	keep_duration int64  // 文件保留时长，天数
+	file_index    int64  // 当日文件id
 }
 
 /**
@@ -62,12 +62,12 @@ type outer struct {
 
 // config
 type Config struct {
-	FileName string // 日志名字
-	Dir      string // 日志分类路径
-	KeepDays int64  // 保留天数
-	Method   string // time:按时间滚动文件；size：按日志大小滚动日志
-	Size     any
-	Head     string // 日志头，字符串
+	FileName   string // 日志名字
+	Dir        string // 日志分类路径
+	RotateTime int64  // 保留天数
+	Method     string // time:按时间滚动文件；size：按日志大小滚动日志
+	Size       any
+	Head       string // 日志头，字符串
 }
 
 func New(ctx context.Context, config *Config, rotate Rotator) *outer {
@@ -77,10 +77,10 @@ func New(ctx context.Context, config *Config, rotate Rotator) *outer {
 	config.Init()
 	if rotate == nil {
 		rotate = &rotateRule{
-			create:    time.Now(),
-			method:    config.Method,
-			keep_days: config.KeepDays,
-			size:      config.SizeInt64(),
+			create:        time.Now(),
+			method:        config.Method,
+			keep_duration: config.RotateTime,
+			size:          config.SizeInt64(),
 		}
 	}
 
@@ -218,7 +218,7 @@ func (self *outer) Create() error {
 
 func (self *outer) AutoDelete(readdir string) error {
 	rdir, _ := ioutil.ReadDir(readdir)
-	expire_time := time.Now().Unix() - self.rule.Keep()*86400
+	expire_time := time.Now().Unix() - self.rule.Keep()
 	for _, fi := range rdir {
 		full_file_name := filepath.Join(self.fi.fullpath(), fi.Name())
 		if fi.IsDir() {
@@ -347,7 +347,7 @@ func (self *rotateRule) CreatedTime(args ...time.Time) time.Time {
 }
 
 func (self *rotateRule) Keep() int64 {
-	return self.keep_days
+	return self.keep_duration
 }
 
 func (self *rotateRule) RotateIncr() int64 {
@@ -381,8 +381,8 @@ func (config *Config) Init() {
 		config.Method = "time"
 	}
 
-	if config.KeepDays == 0 {
-		config.KeepDays = 30
+	if config.RotateTime == 0 {
+		config.RotateTime = 30 * 86400
 	}
 
 	if config.Size == 0 {

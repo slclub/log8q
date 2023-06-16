@@ -3,6 +3,7 @@ package log8q
 import (
 	"github.com/slclub/go-tips/spinlock"
 	"io"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -16,6 +17,13 @@ const (
 var (
 	_ io.ReadWriter = NewBucket(LEN_BUCKET)
 )
+
+type WriteMany interface {
+	io.Writer
+	WriteMany(...[]byte) (int, error)
+}
+
+var _ WriteMany = &Cache{}
 
 type Bucket struct {
 	data     []byte
@@ -66,13 +74,45 @@ func (cache *Cache) Write(data []byte) (int, error) {
 		time.Sleep(time.Millisecond)
 		return cache.Write(data)
 	}
+	defer bucket.Use(UN_USING)
 	n, err := bucket.Write(data)
 	return n, err
 }
 
+func (cache *Cache) WriteMany(args ...[]byte) (int, error) {
+	bucket := cache.Get()
+	if bucket == nil {
+		time.Sleep(time.Millisecond)
+		return cache.WriteMany(args...)
+	}
+	defer bucket.Use(UN_USING)
+	nn := 0
+	for _, v := range args {
+		n, _ := bucket.Write(v)
+		nn += n
+	}
+	return nn, nil
+}
+
 func (cache *Cache) Read(data []byte) (int, error) {
 	n := 0
-	for _, v := range cache.list {
+	//for _, v := range cache.list {
+	//	if v.ReadSize() <= 0 || v.Use() == USING {
+	//		continue
+	//	}
+	//	tn, err := v.Read(data[n:])
+	//	n += tn
+	//	if err != nil {
+	//		return n, err
+	//	}
+	//	if n >= len(data) {
+	//		return n, nil
+	//	}
+	//}
+	l := len(cache.list)
+	k := rand.Intn(l)
+	for i := 0; i < len(cache.list); i++ {
+		v := cache.list[(k+i)%l]
 		if v.ReadSize() <= 0 || v.Use() == USING {
 			continue
 		}
@@ -117,12 +157,20 @@ func (cache *Cache) ReadSize() int {
 	return n
 }
 
+func (cache *Cache) Cap() int {
+	n := 0
+	for _, v := range cache.list {
+		n += v.Cap()
+	}
+	return n
+}
+
 // ---------------------------------------------------
 // bucket methods
 // ---------------------------------------------------
 func (self *Bucket) Write(data []byte) (int, error) {
-	self.Use(USING)
-	defer self.Use(UN_USING)
+	//self.Use(USING)
+	//defer self.Use(UN_USING)
 	switch {
 	case self.Free() >= len(data):
 		n := copy(self.data[self.endoff:], data)
@@ -175,10 +223,11 @@ func (self *Bucket) ReadAll() ([]byte, error) {
 	return data, nil
 }
 
-func (self *Bucket) writeOnly(data []byte) (int, error) {
-	n := copy(self.data[self.endoff:], data)
-	return n, nil
-}
+//
+//func (self *Bucket) writeOnly(data []byte) (int, error) {
+//	n := copy(self.data[self.endoff:], data)
+//	return n, nil
+//}
 
 func (self *Bucket) Size() int {
 	return self.endoff - self.offset
