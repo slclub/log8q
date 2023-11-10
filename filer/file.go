@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -55,6 +56,7 @@ type outer struct {
 	fi          *fileInfo
 	rule        Rotator
 	file        *os.File
+	file_mu     sync.Locker
 	head_create string
 	size        int64
 	ctx         context.Context
@@ -93,6 +95,7 @@ func New(ctx context.Context, config *Config, rotate Rotator) *outer {
 		},
 		rule:        rotate,
 		file:        nil,
+		file_mu:     &sync.Mutex{},
 		head_create: config.Head,
 		size:        0,
 		ctx:         ctx,
@@ -142,6 +145,7 @@ func (self *outer) movefile() error {
 	return err
 }
 func (self *outer) Flush() error {
+	self.file.Sync()
 	return nil
 }
 
@@ -183,9 +187,9 @@ func (self *outer) rotate() error {
 		return err
 	}
 
-	self.Create()
+	err = self.Create()
 
-	return nil
+	return err
 }
 
 func (self *outer) Move() error {
@@ -193,6 +197,7 @@ func (self *outer) Move() error {
 		self.Flush()
 		self.file.Close()
 		//fmt.Println("[REMOVE][LOG][PATH]", fl.fullpath(), "[LOG_NAME]", fl.fullname(zero_time), "[MODIFY]",isSameDate(fl.t, time.Now()) )
+		self.file = nil
 	}
 	if self.rule.RotateBool(self) {
 		self.movefile()
@@ -232,6 +237,8 @@ func (self *outer) AutoDelete(readdir string) error {
 }
 
 func (self *outer) Open() error {
+	self.file_mu.Lock()
+	defer self.file_mu.Unlock()
 	fname := self.fi.fullname(self.fi.usingName())
 	//fl.t = getFileModifyTime(fl.fullpath())
 	if ok, _ := isFileExist(fname); !ok {
@@ -239,6 +246,10 @@ func (self *outer) Open() error {
 	}
 	if !isSameDate(self.rule.CreatedTime(), time.Now()) {
 		return errors.New("Outer.Open file time is old")
+	}
+	if self.file != nil {
+		// the log file had already been opened
+		return nil
 	}
 	fi, err := os.OpenFile(fname, os.O_WRONLY|os.O_APPEND, 0666)
 	fmt.Println("[OPEN_FILE][OK]", fname, ";", err)
