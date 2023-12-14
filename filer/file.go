@@ -230,7 +230,10 @@ func (self *outer) AutoDelete(readdir string) error {
 			self.AutoDelete(full_file_name)
 		}
 		if ok, _ := isFileExist(full_file_name); ok && getFileModifyTime(full_file_name).Unix() < expire_time {
-			os.Remove(full_file_name)
+			txt := full_file_name[len(full_file_name)-3:]
+			if len(full_file_name) > 3 && (txt == "log" || txt == "bak") {
+				os.Remove(full_file_name)
+			}
 		}
 	}
 	return nil

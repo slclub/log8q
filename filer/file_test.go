@@ -32,4 +32,8 @@ func TestConfig(t *testing.T) {
 	if config.BaseName() != "log8q" {
 		t.Error("Log.Config.BaseName", config.BaseName())
 	}
+
+	if filename[len(filename)-3:] != "log" {
+		t.Error("Log.filename.Check", filename)
+	}
 }
