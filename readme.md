@@ -58,4 +58,8 @@ l8.Infof("stdout info name:%v id:%v", "xiaoming", 1)
 - Fatal
 - Print
 
+## Customize
+
+The writer of log8q can be replaced by Config.Writer. It is implement the io.Writer.
+So, you can replace it with any object had implemented the io.Writer. os.Stdout, os.File etc. 
 
