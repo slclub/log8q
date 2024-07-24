@@ -66,7 +66,7 @@ type outer struct {
 type Config struct {
 	FileName   string // 日志名字
 	Dir        string // 日志分类路径
-	RotateTime int64  // 保留天数
+	RotateTime int64  // 保留秒数
 	Method     string // time:按时间滚动文件；size：按日志大小滚动日志
 	Size       any
 	Head       string // 日志头，字符串

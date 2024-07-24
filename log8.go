@@ -20,6 +20,7 @@ type Config struct {
 	Depth             int // 设置深度
 	Writer            io.Writer
 	CacheBucketLength int
+	RotateTime        int64 // 日志保留秒数 单位s
 }
 type Log8 struct {
 	w       io.Writer
@@ -35,7 +36,7 @@ func New(ctx context.Context, config *Config) *Log8 {
 		config = &Config{}
 	}
 	if config.Writer == nil {
-		config.Writer = filer.New(ctx, &filer.Config{FileName: config.Filename}, nil)
+		config.Writer = filer.New(ctx, &filer.Config{FileName: config.Filename, RotateTime: config.RotateTime}, nil)
 	}
 	config.Init()
 	lg := &Log8{
