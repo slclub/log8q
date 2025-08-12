@@ -47,6 +47,7 @@ func New(ctx context.Context, config *Config) *Log8 {
 		ctx:    ctx,
 	}
 	lg.Init()
+
 	return lg
 }
 
@@ -193,6 +194,14 @@ func (self *Log8) Errorf(format string, args ...any) {
 
 func (self *Log8) Fatalf(format string, args ...any) {
 	self.depthPrintf(self.depth, LEVEL_FATAL, format, args...)
+}
+
+func (self *Log8) TraceWarn(args ...any) {
+	self.depthPrint(self.depth, TRACE_WARNNING, args...)
+}
+
+func (self *Log8) TraceError(args ...any) {
+	self.depthPrint(self.depth, TRACE_ERROR, args...)
 }
 
 // ---------------------------------------------------------------

@@ -4,49 +4,53 @@ import "context"
 
 var default_log *Log8
 
-func init() {
+func defaultLog() *Log8 {
+	if default_log != nil {
+		return default_log
+	}
 	default_log = New(context.Background(), &Config{
-		Filename: "./log8q.log",
+		Filename: "logs/log8q.log",
 		Depth:    1,
 	})
+	return default_log
 }
 
 func Info(args ...any) {
-	default_log.Info(args...)
+	defaultLog().Info(args...)
 }
 
 func Debug(args ...any) {
-	default_log.Debug(args...)
+	defaultLog().Debug(args...)
 }
 
 func Warn(args ...any) {
-	default_log.Warn(args...)
+	defaultLog().Warn(args...)
 }
 
 func Error(args ...any) {
-	default_log.Error(args...)
+	defaultLog().Error(args...)
 }
 
 func Fatal(args ...any) {
-	default_log.Fatal(args...)
+	defaultLog().Fatal(args...)
 }
 
 func Infof(format string, args ...any) {
-	default_log.Infof(format, args...)
+	defaultLog().Infof(format, args...)
 }
 
 func Debugf(format string, args ...any) {
-	default_log.Debugf(format, args...)
+	defaultLog().Debugf(format, args...)
 }
 
 func Warnf(format string, args ...any) {
-	default_log.Warnf(format, args...)
+	defaultLog().Warnf(format, args...)
 }
 
 func Errorf(format string, args ...any) {
-	default_log.Errorf(format, args...)
+	defaultLog().Errorf(format, args...)
 }
 
 func Fatalf(format string, args ...any) {
-	default_log.Fatalf(format, args...)
+	defaultLog().Fatalf(format, args...)
 }
